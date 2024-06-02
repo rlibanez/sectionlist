@@ -10,7 +10,7 @@ import retrofit2.http.Url
 interface APIService {
 
     @GET("api/sections")
-    suspend fun getAllSections(@Query("start") start: String): List<Section>
+    suspend fun getAllSections(@Query("start") start: String): Response<List<Section>>
 
     @GET
     suspend fun getSections(@Url name: String): Response<SectionsResponse>

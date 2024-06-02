@@ -1,6 +1,7 @@
 package com.rlibanez.sectionlist
 
 import android.os.Bundle
+import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView.OnQueryTextListener
@@ -43,28 +44,35 @@ class MainActivity : AppCompatActivity(), OnQueryTextListener{
 
     private fun searchByName(query: String) {
         CoroutineScope(Dispatchers.IO).launch {
-            var allSections = emptyList<Section>()
             try {
-                allSections = getRetrofit().create(APIService::class.java).getAllSections("$query")
+                val response = getRetrofit().create(APIService::class.java).getAllSections(query)
+                runOnUiThread {
+                    if (response.isSuccessful) {
+                        val sections = response.body() ?: emptyList()
+                        sectionList.clear()
+                        sectionList.addAll(sections)
+                        adapter.notifyDataSetChanged()
+                    } else {
+                        showError("Ha habido un error")
+                    }
+                }
+                hideKeyBoard()
             } catch (e: Exception) {
-            }
-
-            runOnUiThread {
-                if(allSections.isNotEmpty()) {
-                    //val sections: List<Section> = sections?.sections ?: emptyList()
-                    sectionList.clear()
-                    sectionList.addAll(allSections)
-                    adapter.notifyDataSetChanged()
-                } else {
-                    // Error
-                    showError()
+                runOnUiThread {
+                    showError("Error de conexión")
                 }
             }
         }
     }
 
-    private fun showError() {
-        Toast.makeText(this, "Ha ocurrido un error", Toast.LENGTH_SHORT).show()
+    private fun hideKeyBoard() {
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(binding.viewRoot.windowToken, 0)
+
+    }
+
+    private fun showError(texto: String) {
+        Toast.makeText(this, texto, Toast.LENGTH_SHORT).show()
     }
 
     // Implementación obligatoria de OnQueryTextListener
